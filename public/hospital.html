@@ -1,0 +1,262 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>HemoBridge – Hospital portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/css/admin.css"></head><body>
+
+<!-- ============ Login / Register ============ -->
+<div class="login wide" id="auth">
+<h1>Hospital portal</h1><p class="m">For licensed hospitals and blood centres. Find registered donors, post blood requests and manage your plan.</p>
+<div class="seg"><button id="tl">Log in</button><button class="o" id="tr">Register hospital</button></div>
+
+<div id="fl">
+<div class="fgrid" style="margin-top:10px"><label class="full">Email<input id="le" type="email" autocomplete="username"></label>
+<label class="full">Password<input id="lp" type="password" autocomplete="current-password"></label></div>
+<p style="margin:14px 0 0"><button id="lgo" style="width:100%">Log in</button></p></div>
+
+<div id="fr" class="hide">
+<div class="fgrid" style="margin-top:10px">
+<label class="full">Hospital / blood centre name<input id="rn" autocomplete="organization"></label>
+<label>Licence / registration number<input id="rl"></label>
+<label>Contact person<input id="rc" autocomplete="name"></label>
+<label>Phone<input id="rph" type="tel" autocomplete="tel"></label>
+<label>City<input id="rci" autocomplete="address-level2"></label>
+<label class="full">Address (optional)<input id="ra" autocomplete="street-address"></label>
+<label class="full">Email (your login)<input id="re" type="email" autocomplete="email"></label>
+<label>Password<input id="rp" type="password" autocomplete="new-password"></label>
+<label>Repeat password<input id="rp2" type="password" autocomplete="new-password"></label>
+</div>
+<p class="m" style="margin:10px 0 0;font-size:13px">8+ characters, with a letter and a number. Our team verifies your licence before the account is approved.</p>
+<p style="margin:14px 0 0"><button id="rgo" style="width:100%">Send registration</button></p>
+<div id="pricing" class="m" style="margin-top:12px;font-size:13px"></div></div>
+<p class="err" id="ae" role="alert"></p><p class="m" style="margin:0;font-size:13px"><a href="/" style="color:var(--b)">← Back to HemoBridge</a></p>
+</div>
+
+<!-- ============ Portal ============ -->
+<div class="w hide" id="app">
+<div class="bar"><h1 style="flex:1" id="hn">Hospital</h1><span id="sb"></span><button class="o" id="lo">Log out</button></div>
+<div id="banner"></div>
+<div class="tabs" id="tabs" role="tablist">
+<button class="tab on" data-tab="home">Dashboard</button>
+<button class="tab" data-tab="donors">Find donors</button>
+<button class="tab" data-tab="requests">Blood requests</button>
+<button class="tab" data-tab="sub">Subscription</button>
+<button class="tab" data-tab="account">Account</button>
+</div>
+
+<section class="panel" id="p-home"></section>
+
+<section class="panel hide" id="p-donors">
+<div class="box"><div class="fgrid">
+<label>Blood group<select id="fb"><option value="">Any</option></select></label>
+<label>City<input id="fc" placeholder="Any city"></label>
+<label class="chk" style="align-self:end"><input type="checkbox" id="fa" checked> Available to donate now</label>
+<label class="chk" style="align-self:end"><input type="checkbox" id="fk"> Include compatible groups</label>
+</div><p style="margin:14px 0 0"><button id="fs">Search donors</button></p>
+<p class="m" style="margin:10px 0 0;font-size:13px">With “compatible groups” on, pick the <b>patient’s</b> group and we list every group that can safely donate to them (red-cell matching only).</p></div>
+<div class="sc"><table id="dt"></table></div><div class="pg" id="pg"></div>
+<p class="m">Only donors who agreed to share their details are listed. Contact numbers are shown on request and every view is recorded. Please use them only to arrange a donation, and call politely.</p></section>
+
+<section class="panel hide" id="p-requests">
+<div class="box"><h3>New blood request</h3><div class="fgrid">
+<label>Patient name<input id="qp"></label>
+<label>Blood group<select id="qb"></select></label>
+<label>Component<select id="qc"><option>Whole blood</option><option>Packed red cells</option><option>Platelets</option><option>Plasma</option></select></label>
+<label>Units<input id="qu" type="number" min="1" max="10" value="1"></label>
+<label>Needed within<select id="qg"><option>Immediately</option><option>Within 6 hours</option><option>Within 24 hours</option><option>Planned (2 days or more)</option></select></label>
+<label>Doctor’s name<input id="qd"></label>
+<label>Contact number<input id="qh" type="tel"></label>
+<label>City<input id="qi"></label></div>
+<p style="margin:14px 0 0"><button id="qs">Send request</button></p></div>
+<div class="sc"><table id="rt"></table></div></section>
+
+<section class="panel hide" id="p-sub"></section>
+
+<section class="panel hide" id="p-account">
+<div class="box" id="prof"></div>
+<div class="box" style="max-width:460px"><h3>Change password</h3>
+<div class="fgrid"><label class="full">Current password<input id="cp" type="password" autocomplete="current-password"></label>
+<label class="full">New password<input id="np" type="password" autocomplete="new-password"></label></div>
+<p style="margin:14px 0 0"><button id="chg">Change password</button></p></div></section>
+</div>
+
+<script src="/js/ui.js"></script>
+<script>
+var $ = HB.$, esc = HB.esc, GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+var api = HB.client('hb_hospital', showAuth);
+var ME = null, tab = 'home', revealed = {}, page = 1, selPlan = null, SUB = null;
+
+function showAuth() { $('#app').classList.add('hide'); $('#auth').classList.remove('hide'); }
+function fail(e) { HB.toast(e.message, true); }
+function opts(sel, any) { sel.innerHTML = (any ? '<option value="">Any</option>' : '') + GROUPS.map(function (g) { return '<option>' + g + '</option>'; }).join(''); }
+opts($('#fb'), 1); opts($('#qb'));
+
+/* ---------- Login / register ---------- */
+function mode(reg) {
+  $('#fl').classList.toggle('hide', reg); $('#fr').classList.toggle('hide', !reg);
+  $('#tl').classList.toggle('o', reg); $('#tr').classList.toggle('o', !reg); $('#ae').textContent = '';
+}
+$('#tl').onclick = function () { mode(false); }; $('#tr').onclick = function () { mode(true); };
+function login() {
+  $('#ae').textContent = '';
+  api.call('/api/hospital/login', { method: 'POST', body: { email: $('#le').value, password: $('#lp').value } })
+    .then(function (j) { api.set(j.token); $('#lp').value = ''; boot(); })
+    .catch(function (e) { $('#ae').textContent = e.message; });
+}
+$('#lgo').onclick = login; $('#lp').onkeydown = function (e) { if (e.key == 'Enter') login(); };
+$('#rgo').onclick = function () {
+  $('#ae').textContent = '';
+  if ($('#rp').value !== $('#rp2').value) { $('#ae').textContent = 'The two passwords do not match.'; return; }
+  api.call('/api/hospital/register', { method: 'POST', body: { name: $('#rn').value, license_no: $('#rl').value, contact_person: $('#rc').value, phone: $('#rph').value, city: $('#rci').value, address: $('#ra').value, email: $('#re').value, password: $('#rp').value } })
+    .then(function (j) { mode(false); $('#le').value = $('#re').value; HB.toast(j.message); $('#ae').textContent = ''; })
+    .catch(function (e) { $('#ae').textContent = e.message; });
+};
+api.call('/api/plans').then(function (p) {
+  if (p.length) $('#pricing').innerHTML = '<b>Plans:</b> ' + p.map(function (x) { return esc(x.name) + ' ' + HB.inr(x.price_inr); }).join(' · ') + ' (pay after approval)';
+}).catch(function () {});
+$('#lo').onclick = function () { api.call('/api/hospital/logout', { method: 'POST' }).catch(function () {}).then(function () { api.clear(); ME = null; showAuth(); }); };
+
+/* ---------- Portal shell ---------- */
+function hasAccess() { return ME && ME.hospital.status == 'approved' && (ME.subscription.state == 'active' || ME.subscription.state == 'grace'); }
+function boot() {
+  return api.call('/api/hospital/me').then(function (m) {
+    ME = m; var h = m.hospital, s = m.subscription;
+    $('#auth').classList.add('hide'); $('#app').classList.remove('hide');
+    $('#hn').textContent = h.name;
+    var lab = { active: ['Plan: ' + (s.plan || '') + ' · ' + s.daysLeft + ' days left', 'ok'], grace: ['Plan ended – grace period', 'warn'], expired: ['Plan expired', 'bad'], none: ['No plan yet', ''] }[s.state];
+    $('#sb').innerHTML = h.status == 'approved' ? HB.badge(lab[0], lab[1]) : HB.badge(h.status, h.status == 'pending' ? 'warn' : 'bad');
+    var bn = '';
+    if (h.status == 'pending') bn = '<div class="banner warn"><b>Your registration is being reviewed.</b> We check the licence details you gave, then approve your account. You can log in again later to see the status.</div>';
+    else if (h.status == 'rejected') bn = '<div class="banner bad"><b>Your registration was not approved.</b>' + (h.status_note ? ' Reason: ' + esc(h.status_note) : '') + ' Please contact HemoBridge support.</div>';
+    else if (h.status == 'suspended') bn = '<div class="banner bad"><b>Your account is suspended.</b>' + (h.status_note ? ' Reason: ' + esc(h.status_note) : '') + ' Please contact HemoBridge support.</div>';
+    else if (m.pendingPayment) bn = '<div class="banner warn"><b>Payment received – waiting for verification.</b> Your plan starts as soon as our team confirms it.</div>';
+    else if (s.state == 'grace') bn = '<div class="banner warn"><b>Your plan has ended.</b> You still have access for a few days (grace period). Renew now to avoid losing access.</div>';
+    else if (s.state == 'expired') bn = '<div class="banner bad"><b>Your plan has expired.</b> Renew to get back to donor search and requests.</div>';
+    else if (s.state == 'none') bn = '<div class="banner"><b>Welcome!</b> Your account is approved. Choose a plan to unlock donor search.</div>';
+    else if (s.daysLeft <= 7) bn = '<div class="banner warn">Your plan ends in <b>' + s.daysLeft + ' day(s)</b>. You can renew early – the new period starts after the current one.</div>';
+    $('#banner').innerHTML = bn;
+    var approved = h.status == 'approved';
+    ['home', 'donors', 'requests', 'sub'].forEach(function (t) { $('[data-tab="' + t + '"]').classList.toggle('hide', !approved); });
+    if (!approved && tab != 'account') tab = 'account';
+    else if (approved && !hasAccess() && (tab == 'home' || tab == 'donors' || tab == 'requests')) tab = 'sub';
+    show(tab);
+  }).catch(function (e) { if (api.token()) fail(e); });
+}
+function show(t) {
+  tab = t;
+  HB.$$('.tab').forEach(function (b) { b.classList.toggle('on', b.dataset.tab == t); });
+  HB.$$('.panel').forEach(function (p) { p.classList.toggle('hide', p.id != 'p-' + t); });
+  if (t == 'account') drawProfile();
+  else if (t == 'sub') loadSub();
+  else if (!hasAccess()) lock(t);
+  else if (t == 'home') loadHome();
+  else if (t == 'donors') searchDonors(1);
+  else if (t == 'requests') loadRequests();
+}
+$('#tabs').onclick = function (e) { var t = e.target.closest('[data-tab]'); if (t) show(t.dataset.tab); };
+function lock(t) {
+  var box = '<div class="box lock"><h3>This section needs an active plan</h3><p class="m">Subscribe (monthly or yearly) to search donors and post blood requests.</p><button data-go="sub">View plans</button></div>';
+  $('#p-' + t).innerHTML = box;
+}
+document.addEventListener('click', function (e) { var g = e.target.closest('[data-go]'); if (g) show(g.dataset.go); });
+
+/* ---------- Dashboard ---------- */
+function loadHome() {
+  api.call('/api/hospital/stats').then(function (s) {
+    var c = [['Plan', s.subscription.state == 'grace' ? 'Grace period' : (s.subscription.plan || '-')], ['Days left', s.subscription.state == 'grace' ? 0 : s.subscription.daysLeft],
+      ['Available donors (all cities)', s.availableDonors], ['Available donors in ' + ME.hospital.city, s.availableInCity],
+      ['Open requests', s.openRequests], ['Contacts opened today', s.contactsToday + ' / ' + s.contactLimit]];
+    $('#p-home').innerHTML = '<div class="cards">' + c.map(function (x) { return '<div class="c"><b>' + esc(x[1]) + '</b>' + esc(x[0]) + '</div>'; }).join('') + '</div>' +
+      '<div class="box"><h3>Quick start</h3><p class="m" style="margin:0">Use <b>Find donors</b> to search by blood group and city. Post a <b>Blood request</b> to track an active need. Your plan details are under <b>Subscription</b>.</p></div>';
+  }).catch(function (e) { if (e.code) boot(); else fail(e); });
+}
+
+/* ---------- Donors ---------- */
+function searchDonors(p) {
+  page = p || 1;
+  var q = '?page=' + page + '&bg=' + encodeURIComponent($('#fb').value) + '&city=' + encodeURIComponent($('#fc').value) + '&available=' + ($('#fa').checked ? 1 : 0) + '&compat=' + ($('#fk').checked ? 1 : 0);
+  api.call('/api/hospital/donors' + q).then(function (r) {
+    $('#dt').innerHTML = '<tr><th>Name</th><th>Group</th><th>City</th><th>Age / sex</th><th>Last donation</th><th>Status</th><th>Contact</th></tr>' + (r.donors.map(function (d) {
+      var c = revealed[d.id];
+      var cell = c ? '<a href="tel:' + esc(c.phone) + '">' + esc(c.phone) + '</a>' + (c.email ? '<br><span class="m">' + esc(c.email) + '</span>' : '') : '<span class="mono">' + esc(d.phone) + '</span> <button class="o sm" data-reveal="' + esc(d.id) + '">Show contact</button>';
+      return '<tr><td>' + esc(d.name) + '</td><td><b>' + esc(d.bg) + '</b></td><td>' + esc(d.city) + '</td><td>' + (d.age == null ? '-' : d.age) + (d.sex ? ' · ' + esc(d.sex) : '') + '</td><td>' + esc(d.last || 'First time') + '</td><td>' + (d.available ? HB.badge('available', 'ok') : HB.badge('resting', 'warn')) + '</td><td>' + cell + '</td></tr>';
+    }).join('') || '<tr><td colspan="7" class="m">No donors match. Try a wider search.</td></tr>');
+    $('#pg').innerHTML = '<span class="m">' + r.total + ' donor(s) · page ' + r.page + ' of ' + r.pages + '</span>' + (r.page > 1 ? '<button class="o sm" data-pg="' + (r.page - 1) + '">Previous</button>' : '') + (r.page < r.pages ? '<button class="o sm" data-pg="' + (r.page + 1) + '">Next</button>' : '');
+  }).catch(function (e) { if (e.code) boot(); else fail(e); });
+}
+$('#fs').onclick = function () { searchDonors(1); };
+document.addEventListener('click', function (e) {
+  var r = e.target.closest('[data-reveal]'), p = e.target.closest('[data-pg]');
+  if (p) searchDonors(+p.dataset.pg);
+  if (r) api.call('/api/hospital/donors/' + r.dataset.reveal + '/contact', { method: 'POST' }).then(function (c) { revealed[r.dataset.reveal] = c; searchDonors(page); }).catch(fail);
+});
+
+/* ---------- Requests ---------- */
+function loadRequests() {
+  $('#qh').value = $('#qh').value || ME.hospital.phone; $('#qi').value = $('#qi').value || ME.hospital.city;
+  api.call('/api/hospital/requests').then(function (rows) {
+    $('#rt').innerHTML = '<tr><th>When</th><th>Patient</th><th>Need</th><th>Urgency</th><th>Doctor / contact</th><th>Donors matched</th><th>Status</th></tr>' + (rows.map(function (x) {
+      return '<tr><td>' + HB.when(x.created) + '</td><td>' + esc(x.patient) + '</td><td><b>' + x.units + ' × ' + esc(x.bg) + '</b><br><span class="m">' + esc(x.comp) + '</span></td><td>' + esc(x.urgency) + '</td><td>Dr. ' + esc(x.doctor) + '<br><span class="m">' + esc(x.phone) + '</span></td><td>' + (x.matches || 0) + '</td><td><select data-rs="' + esc(x.id) + '" aria-label="Status">' + ['open', 'fulfilled', 'closed'].map(function (o) { return '<option' + (o == x.status ? ' selected' : '') + '>' + o + '</option>'; }).join('') + '</select></td></tr>';
+    }).join('') || '<tr><td colspan="7" class="m">No requests yet.</td></tr>');
+  }).catch(function (e) { if (e.code) boot(); else fail(e); });
+}
+$('#qs').onclick = function () {
+  api.call('/api/hospital/requests', { method: 'POST', body: { pn: $('#qp').value, rb: $('#qb').value, comp: $('#qc').value, units: $('#qu').value, urg: $('#qg').value, doc: $('#qd').value, ph: $('#qh').value, city: $('#qi').value } })
+    .then(function (r) { HB.toast('Request sent. ' + r.matches + ' registered donor(s) match.'); $('#qp').value = ''; loadRequests(); }).catch(fail);
+};
+document.addEventListener('change', function (e) {
+  var id = e.target.dataset && e.target.dataset.rs; if (!id) return;
+  api.call('/api/hospital/requests/' + id, { method: 'PATCH', body: { status: e.target.value } }).then(function () { HB.toast('Status updated'); }).catch(fail);
+});
+
+/* ---------- Subscription ---------- */
+var payKind = { submitted: 'warn', confirmed: 'ok', rejected: 'bad' };
+function loadSub() {
+  api.call('/api/hospital/subscription').then(function (r) {
+    SUB = r; var s = r.subscription, i = r.paymentInfo, el = $('#p-sub');
+    var cur = s.state == 'none' ? 'You do not have a plan yet.' : (s.state == 'active' ? 'Current plan: <b>' + esc(s.plan) + '</b>, valid till <b>' + HB.day(s.ends) + '</b> (' + s.daysLeft + ' days left).' : (s.state == 'grace' ? 'Your <b>' + esc(s.plan) + '</b> plan ended on ' + HB.day(s.ends) + '. Grace period: ' + s.graceDays + ' days.' : 'Your <b>' + esc(s.plan) + '</b> plan expired on ' + HB.day(s.ends) + '.'));
+    var waiting = ME.pendingPayment;
+    var html = '<div class="box"><h3>Your subscription</h3><p style="margin:0">' + cur + '</p></div>';
+    if (waiting) html += '<div class="banner warn">Your payment is waiting for verification. You can buy another plan after it is decided.</div>';
+    else {
+      html += '<div class="plans">' + r.plans.map(function (p) {
+        return '<div class="plan' + (selPlan == p.id ? ' sel' : '') + '"><h3 style="margin:0">' + esc(p.name) + '</h3><b class="pr">' + HB.inr(p.price_inr) + '</b><p>per ' + (p.months == 12 ? 'year' : (p.months == 1 ? 'month' : p.months + ' months')) + '</p><button data-plan="' + p.id + '">' + (s.state == 'active' ? 'Renew with this' : 'Choose') + '</button></div>';
+      }).join('') + '</div>';
+      if (selPlan) {
+        var pl = r.plans.filter(function (x) { return x.id == selPlan; })[0];
+        if (pl) {
+          var lines = [];
+          if (i.payee) lines.push('Pay to: <b>' + esc(i.payee) + '</b>');
+          if (i.upi) lines.push('UPI ID: <b class="mono">' + esc(i.upi) + '</b>');
+          if (i.bank) lines.push('Bank: <span class="mono">' + esc(i.bank) + '</span>');
+          if (i.note) lines.push(esc(i.note));
+          html += '<div class="box"><h3>Pay ' + HB.inr(pl.price_inr) + ' for the ' + esc(pl.name) + ' plan</h3>' +
+            (lines.length ? '<p style="margin:0 0 12px;line-height:1.9">' + lines.join('<br>') + '</p>' : '<p class="m">Ask HemoBridge support for the payment details, then enter your transaction reference below.</p>') +
+            '<div class="fgrid"><label class="full">Transaction reference (UPI ref / UTR number)<input id="ref" autocomplete="off"></label></div>' +
+            '<p style="margin:14px 0 0"><button id="paid">I have paid – submit</button></p>' +
+            '<p class="m" style="margin:10px 0 0;font-size:13px">Our team checks the payment and starts your plan, usually within a few hours.</p></div>';
+        }
+      }
+    }
+    html += '<h2>Payments</h2><div class="sc"><table><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Reference</th><th>Status</th></tr>' + (r.payments.map(function (p) {
+      return '<tr><td>' + HB.when(p.created) + '</td><td>' + esc(p.plan) + '</td><td>' + HB.inr(p.amount_inr) + '</td><td class="mono">' + esc(p.reference) + '</td><td>' + HB.badge(p.status, payKind[p.status]) + (p.note ? '<br><span class="m">' + esc(p.note) + '</span>' : '') + '</td></tr>';
+    }).join('') || '<tr><td colspan="5" class="m">No payments yet.</td></tr>') + '</table></div>';
+    el.innerHTML = html;
+  }).catch(fail);
+}
+document.addEventListener('click', function (e) {
+  var b = e.target.closest('[data-plan]');
+  if (b && $('#p-sub').contains(b)) { selPlan = +b.dataset.plan; loadSub(); }
+  if (e.target.id == 'paid') api.call('/api/hospital/subscribe', { method: 'POST', body: { plan_id: selPlan, reference: $('#ref').value } })
+    .then(function (j) { HB.toast(j.message); selPlan = null; boot(); }).catch(fail);
+});
+
+/* ---------- Account ---------- */
+function drawProfile() {
+  var h = ME.hospital;
+  $('#prof').innerHTML = '<h3>Hospital details</h3><p style="margin:0;line-height:1.9"><b>' + esc(h.name) + '</b><br>Licence: ' + esc(h.license_no) + '<br>Contact: ' + esc(h.contact_person) + ' · ' + esc(h.phone) + '<br>' + esc(h.email) + '<br>' + esc(h.city) + (h.address ? ', ' + esc(h.address) : '') + '<br>Status: ' + HB.badge(h.status, h.status == 'approved' ? 'ok' : (h.status == 'pending' ? 'warn' : 'bad')) + '</p>';
+}
+$('#chg').onclick = function () {
+  api.call('/api/hospital/password', { method: 'POST', body: { current: $('#cp').value, next: $('#np').value } })
+    .then(function () { $('#cp').value = $('#np').value = ''; HB.toast('Password changed'); }).catch(fail);
+};
+
+if (api.token()) boot();
+</script></body></html>

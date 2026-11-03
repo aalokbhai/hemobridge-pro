@@ -1,0 +1,223 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>HemoBridge – Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/css/admin.css"></head><body>
+
+<div class="login" id="lg"><h1>Admin login</h1><p class="m">Sign in with your admin email and password.</p>
+<input id="em" type="email" placeholder="Admin email" aria-label="Admin email" autocomplete="username" autofocus>
+<input id="pw" type="password" placeholder="Password" aria-label="Password" autocomplete="current-password">
+<button id="go" style="width:100%">Log in</button><p class="err" id="e1" role="alert"></p></div>
+
+<div class="w hide" id="app">
+<div class="bar"><h1 style="flex:1">HemoBridge admin</h1><span class="m" id="who"></span><button class="o" id="rf">Refresh</button><button class="o" id="lo">Log out</button></div>
+<p class="err" id="e2" role="alert"></p>
+<div class="tabs" id="tabs" role="tablist">
+<button class="tab on" data-tab="overview">Overview</button>
+<button class="tab" data-tab="hospitals">Hospitals<span class="n hide" id="nH"></span></button>
+<button class="tab" data-tab="payments">Payments<span class="n hide" id="nP"></span></button>
+<button class="tab" data-tab="plans">Plans</button>
+<button class="tab" data-tab="donors">Donors</button>
+<button class="tab" data-tab="requests">Requests</button>
+<button class="tab" data-tab="log">Access log</button>
+<button class="tab" data-tab="account">Account</button>
+</div>
+
+<section class="panel" id="p-overview"><div class="cards" id="cards"></div>
+<p class="m">Hospitals can only see donors who ticked the consent box. Phone numbers are shown only when a hospital taps “Show contact”, and every view is logged.</p></section>
+
+<section class="panel hide" id="p-hospitals">
+<div class="bar"><input id="hq" placeholder="Search name, city, email, licence" aria-label="Search hospitals"><select id="hs" aria-label="Status filter"><option value="">All statuses</option><option>pending</option><option>approved</option><option>suspended</option><option>rejected</option></select></div>
+<div class="sc"><table id="ht"></table></div></section>
+
+<section class="panel hide" id="p-payments">
+<div class="bar"><select id="ps" aria-label="Payment status"><option value="">All payments</option><option value="submitted" selected>Waiting for verification</option><option value="confirmed">Confirmed</option><option value="rejected">Rejected</option></select></div>
+<div class="sc"><table id="pt"></table></div>
+<p class="m">Check the transaction reference in your bank / UPI app before you confirm. Confirming starts the plan immediately (a renewal starts after the current plan ends).</p></section>
+
+<section class="panel hide" id="p-plans"><div class="plans" id="plans"></div><p class="m" id="planinfo"></p></section>
+
+<section class="panel hide" id="p-donors">
+<div class="bar"><input id="dq" placeholder="Search name, city, phone" aria-label="Search donors"><select id="dg" aria-label="Blood group filter"><option value="">All groups</option></select><button class="o" id="x2">Download CSV</button></div>
+<div class="sc"><table id="dt"></table></div></section>
+
+<section class="panel hide" id="p-requests">
+<div class="bar"><input id="rq" placeholder="Search patient, hospital, city" aria-label="Search requests"><select id="rs" aria-label="Status filter"><option value="">All statuses</option><option>open</option><option>fulfilled</option><option>closed</option></select><button class="o" id="x1">Download CSV</button></div>
+<div class="sc"><table id="rt"></table></div></section>
+
+<section class="panel hide" id="p-log"><div class="sc"><table id="lt"></table></div>
+<p class="m">Latest 300 times a hospital opened a donor’s contact details.</p></section>
+
+<section class="panel hide" id="p-account"><div class="box" style="max-width:460px"><h3>Change password</h3>
+<div class="fgrid"><label class="full">Current password<input id="cp" type="password" autocomplete="current-password"></label>
+<label class="full">New password (10+ characters)<input id="np" type="password" autocomplete="new-password"></label></div>
+<p style="margin:14px 0 0"><button id="chg">Change password</button></p></div></section>
+
+<p class="m" style="margin-top:30px">Donor, hospital and patient details are private. Do not share this page or the CSV files.</p>
+</div>
+
+<script src="/js/ui.js"></script>
+<script>
+var $ = HB.$, esc = HB.esc, when = HB.when;
+var api = HB.client('hb_admin', showLogin);
+var D = { requests: [], donors: [], hospitals: [], payments: [], plans: [], log: [] }, tab = 'overview';
+
+function showLogin() { $('#app').classList.add('hide'); $('#lg').classList.remove('hide'); }
+function err(e) { $('#e2').textContent = e && e.message || ''; }
+function fail(e) { err(e); HB.toast(e.message, true); }
+
+function login() {
+  $('#e1').textContent = '';
+  api.call('/api/admin/login', { method: 'POST', body: { email: $('#em').value, password: $('#pw').value } })
+    .then(function (j) { api.set(j.token); $('#pw').value = ''; start(); })
+    .catch(function (e) { $('#e1').textContent = e.message; });
+}
+function start() {
+  api.call('/api/admin/me').then(function (me) {
+    $('#who').textContent = me.email;
+    $('#lg').classList.add('hide'); $('#app').classList.remove('hide'); show(tab);
+  }).catch(function () {});
+}
+function logout() { api.call('/api/admin/logout', { method: 'POST' }).catch(function () {}).then(function () { api.clear(); showLogin(); }); }
+
+function show(t) {
+  tab = t; err();
+  HB.$$('.tab').forEach(function (b) { b.classList.toggle('on', b.dataset.tab == t); });
+  HB.$$('.panel').forEach(function (p) { p.classList.toggle('hide', p.id != 'p-' + t); });
+  load();
+}
+function badges() {   // tabs par pending count
+  api.call('/api/admin/overview').then(function (o) {
+    [['#nH', o.hospitalsPending], ['#nP', o.paymentsWaiting]].forEach(function (x) { $(x[0]).textContent = x[1]; $(x[0]).classList.toggle('hide', !x[1]); });
+  }).catch(function () {});
+}
+function load() {
+  badges();
+  var jobs = {
+    overview: function () { return api.call('/api/admin/overview').then(drawOverview); },
+    hospitals: function () { return Promise.all([api.call('/api/admin/hospitals'), api.call('/api/admin/plans')]).then(function (r) { D.hospitals = r[0]; D.plans = r[1].plans; drawHospitals(); }); },
+    payments: function () { return api.call('/api/admin/payments').then(function (r) { D.payments = r; drawPayments(); }); },
+    plans: function () { return api.call('/api/admin/plans').then(function (r) { D.plans = r.plans; drawPlans(r); }); },
+    donors: function () { return api.call('/api/admin/data').then(function (r) { D.donors = r.donors; D.requests = r.requests; drawDonors(); }); },
+    requests: function () { return api.call('/api/admin/data').then(function (r) { D.donors = r.donors; D.requests = r.requests; drawRequests(); }); },
+    log: function () { return api.call('/api/admin/access-log').then(function (r) { D.log = r; drawLog(); }); },
+    account: function () { return Promise.resolve(); }
+  };
+  jobs[tab]().catch(fail);
+}
+
+/* ---------- Overview ---------- */
+function drawOverview(o) {
+  var c = [['Hospitals waiting for approval', o.hospitalsPending], ['Payments to verify', o.paymentsWaiting], ['Active subscribers', o.activeSubscribers],
+    ['Plans ending in 7 days', o.expiringSoon], ['Revenue (confirmed)', HB.inr(o.revenue)], ['Approved hospitals', o.hospitalsApproved],
+    ['Donors (shared with hospitals)', o.donors + ' (' + o.donorsShared + ')'], ['Open blood requests', o.openRequests + ' / ' + o.totalRequests]];
+  $('#cards').innerHTML = c.map(function (x) { return '<div class="c"><b>' + esc(x[1]) + '</b>' + esc(x[0]) + '</div>'; }).join('');
+}
+
+/* ---------- Hospitals ---------- */
+var subKind = { active: 'ok', grace: 'warn', expired: 'bad', none: '' };
+var stKind = { approved: 'ok', pending: 'warn', rejected: 'bad', suspended: 'bad' };
+function drawHospitals() {
+  var q = $('#hq').value.toLowerCase(), s = $('#hs').value;
+  var rows = D.hospitals.filter(function (h) { return (!s || h.status == s) && (!q || (h.name + ' ' + h.city + ' ' + h.email + ' ' + h.license_no).toLowerCase().indexOf(q) > -1); });
+  var opts = D.plans.map(function (p) { return '<option value="' + p.id + '">' + esc(p.name) + '</option>'; }).join('');
+  $('#ht').innerHTML = '<tr><th>Hospital</th><th>Contact</th><th>Account</th><th>Subscription</th><th>Actions</th></tr>' + (rows.map(function (h) {
+    var act = '';
+    if (h.status == 'pending') act = '<button class="sm" data-act="hst" data-id="' + h.id + '" data-v="approved">Approve</button><button class="o sm" data-act="hst" data-id="' + h.id + '" data-v="rejected" data-ask="1">Reject</button>';
+    else if (h.status == 'approved') act = '<select data-plan="' + h.id + '" aria-label="Plan">' + opts + '</select><button class="o sm" data-act="grant" data-id="' + h.id + '">Give plan</button><button class="o sm" data-act="hst" data-id="' + h.id + '" data-v="suspended" data-ask="1">Suspend</button>';
+    else act = '<button class="sm" data-act="hst" data-id="' + h.id + '" data-v="approved">Approve</button>';
+    return '<tr><td><b>' + esc(h.name) + '</b><br><span class="m">Licence ' + esc(h.license_no) + '<br>Joined ' + HB.day(h.created) + '</span></td>' +
+      '<td>' + esc(h.contact_person) + '<br><a href="tel:' + esc(h.phone) + '">' + esc(h.phone) + '</a><br><span class="m">' + esc(h.email) + '<br>' + esc(h.city) + '</span></td>' +
+      '<td>' + HB.badge(h.status, stKind[h.status]) + (h.status_note ? '<br><span class="m">' + esc(h.status_note) + '</span>' : '') + '</td>' +
+      '<td>' + HB.badge(h.subState == 'none' ? 'no plan' : h.subState, subKind[h.subState]) + (h.ends ? '<br><span class="m">till ' + HB.day(h.ends) + '</span>' : '') + '</td>' +
+      '<td><div class="row2">' + act + '</div></td></tr>';
+  }).join('') || '<tr><td colspan="5" class="m">No hospitals.</td></tr>');
+}
+
+/* ---------- Payments ---------- */
+var payKind = { submitted: 'warn', confirmed: 'ok', rejected: 'bad' };
+function drawPayments() {
+  var s = $('#ps').value, rows = D.payments.filter(function (p) { return !s || p.status == s; });
+  $('#pt').innerHTML = '<tr><th>When</th><th>Hospital</th><th>Plan</th><th>Amount</th><th>Reference</th><th>Status</th><th></th></tr>' + (rows.map(function (p) {
+    var act = p.status == 'submitted' ? '<div class="row2"><button class="sm" data-act="pay" data-id="' + p.id + '" data-v="confirm" data-amt="' + p.amount + '" data-h="' + esc(p.hospital) + '">Confirm</button><button class="o sm" data-act="pay" data-id="' + p.id + '" data-v="reject">Reject</button></div>' : (p.note ? '<span class="m">' + esc(p.note) + '</span>' : '');
+    return '<tr><td>' + when(p.created) + '</td><td>' + esc(p.hospital) + '</td><td>' + esc(p.plan) + '</td><td>' + HB.inr(p.amount) + '</td><td class="mono">' + esc(p.reference) + '<br><span class="m">' + esc(p.method) + '</span></td><td>' + HB.badge(p.status, payKind[p.status]) + '</td><td>' + act + '</td></tr>';
+  }).join('') || '<tr><td colspan="7" class="m">Nothing here.</td></tr>');
+}
+
+/* ---------- Plans ---------- */
+function drawPlans(r) {
+  $('#plans').innerHTML = r.plans.map(function (p) {
+    return '<div class="plan"><h3 style="margin:0">' + esc(p.name) + '<span class="pill">' + p.months + (p.months == 1 ? ' month' : ' months') + '</span></h3>' +
+      '<label class="m" style="display:block;margin-top:10px">Price (₹)<input data-price="' + p.id + '" type="number" min="0" value="' + p.price_inr + '" style="width:100%;margin-top:4px"></label>' +
+      '<label class="chk" style="margin:12px 0"><input type="checkbox" data-active="' + p.id + '"' + (p.active ? ' checked' : '') + '> Available to hospitals</label>' +
+      '<button data-act="plan" data-id="' + p.id + '">Save</button></div>';
+  }).join('');
+  $('#planinfo').textContent = 'Grace period after a plan ends: ' + r.graceDays + ' days. Donor contacts per hospital per day: ' + r.phoneLimit + '. (Change these in the .env file.)';
+}
+
+/* ---------- Donors / requests / log ---------- */
+function drawDonors() {
+  var g = $('#dg').value, q = $('#dq').value.toLowerCase();
+  var dd = D.donors.filter(function (d) { return (!g || d.bg == g) && (!q || (d.name + ' ' + d.city + ' ' + d.phone).toLowerCase().indexOf(q) > -1); });
+  $('#dt').innerHTML = '<tr><th>Name</th><th>Group</th><th>City</th><th>Phone</th><th>Last donation</th><th>Hospitals can see</th><th>Registered</th><th></th></tr>' + (dd.map(function (d) {
+    return '<tr><td>' + esc(d.name) + '</td><td><b>' + esc(d.bg) + '</b></td><td>' + esc(d.city) + '</td><td><a href="tel:' + esc(d.phone) + '">' + esc(d.phone) + '</a></td><td>' + esc(d.last || 'First time') + '</td><td>' + (d.consent ? HB.badge('yes', 'ok') : HB.badge('no')) + '</td><td>' + when(d.created) + '</td><td><button class="o sm" data-act="del" data-k="donors" data-id="' + esc(d.id) + '">Delete</button></td></tr>';
+  }).join('') || '<tr><td colspan="8" class="m">No donors yet.</td></tr>');
+}
+function drawRequests() {
+  var q = $('#rq').value.toLowerCase(), s = $('#rs').value;
+  var rr = D.requests.filter(function (x) { return (!s || x.status == s) && (!q || (x.patient + ' ' + x.hospital + ' ' + x.city).toLowerCase().indexOf(q) > -1); });
+  $('#rt').innerHTML = '<tr><th>When</th><th>Patient</th><th>Need</th><th>Urgency</th><th>Hospital</th><th>Contact</th><th>Matched</th><th>Status</th><th></th></tr>' + (rr.map(function (x) {
+    return '<tr><td>' + when(x.created) + '</td><td>' + esc(x.patient) + '</td><td><b>' + x.units + ' × ' + esc(x.bg) + '</b><br><span class="m">' + esc(x.comp) + '</span></td><td>' + esc(x.urgency) + '</td><td>' + esc(x.hospital) + '<br><span class="m">Dr. ' + esc(x.doctor) + (x.city ? ', ' + esc(x.city) : '') + '</span></td><td><a href="tel:' + esc(x.phone) + '">' + esc(x.phone) + '</a></td><td>' + (x.matches || 0) + '</td><td><select data-s="' + esc(x.id) + '" aria-label="Status">' + ['open', 'fulfilled', 'closed'].map(function (o) { return '<option' + (o == x.status ? ' selected' : '') + '>' + o + '</option>'; }).join('') + '</select></td><td><button class="o sm" data-act="del" data-k="requests" data-id="' + esc(x.id) + '">Delete</button></td></tr>';
+  }).join('') || '<tr><td colspan="9" class="m">No requests.</td></tr>');
+}
+function drawLog() {
+  $('#lt').innerHTML = '<tr><th>When</th><th>Hospital</th><th>Opened contact of</th></tr>' + (D.log.map(function (l) {
+    return '<tr><td>' + when(l.created) + '</td><td>' + esc(l.hospital) + '</td><td>' + (l.donor ? esc(l.donor) + ' <b>' + esc(l.bg) + '</b>' : '<span class="m">deleted donor</span>') + '</td></tr>';
+  }).join('') || '<tr><td colspan="3" class="m">No contact views yet.</td></tr>');
+}
+
+/* ---------- Actions ---------- */
+function done(msg) { return function () { HB.toast(msg); load(); }; }
+document.addEventListener('click', function (e) {
+  var b = e.target.closest('[data-act]'); if (!b) return;
+  var a = b.dataset.act, id = b.dataset.id;
+  if (a == 'hst') {
+    var note = '';
+    if (b.dataset.ask) { note = prompt('Reason (the hospital will see this):', ''); if (note === null) return; }
+    api.call('/api/admin/hospitals/' + id, { method: 'PATCH', body: { status: b.dataset.v, note: note } }).then(done('Hospital ' + b.dataset.v)).catch(fail);
+  } else if (a == 'grant') {
+    var sel = $('[data-plan="' + id + '"]');
+    if (confirm('Start this plan for the hospital without a payment?')) api.call('/api/admin/hospitals/' + id + '/grant', { method: 'POST', body: { plan_id: sel.value } }).then(done('Plan started')).catch(fail);
+  } else if (a == 'pay') {
+    if (b.dataset.v == 'confirm') {
+      if (confirm('Confirm that ' + HB.inr(b.dataset.amt) + ' was received from ' + b.dataset.h + '? Their plan will start now.')) api.call('/api/admin/payments/' + id + '/decision', { method: 'POST', body: { decision: 'confirm' } }).then(done('Payment confirmed, plan started')).catch(fail);
+    } else {
+      var why = prompt('Reason for rejecting (the hospital will see this):', ''); if (why === null) return;
+      api.call('/api/admin/payments/' + id + '/decision', { method: 'POST', body: { decision: 'reject', note: why } }).then(done('Payment rejected')).catch(fail);
+    }
+  } else if (a == 'plan') {
+    api.call('/api/admin/plans/' + id, { method: 'PUT', body: { price_inr: $('[data-price="' + id + '"]').value, active: $('[data-active="' + id + '"]').checked } }).then(done('Plan saved')).catch(fail);
+  } else if (a == 'del') {
+    if (confirm('Delete this record permanently?')) api.call('/api/admin/' + b.dataset.k + '/' + id, { method: 'DELETE' }).then(done('Deleted')).catch(fail);
+  }
+});
+document.addEventListener('change', function (e) {
+  var s = e.target.dataset && e.target.dataset.s; if (!s) return;
+  api.call('/api/admin/requests/' + s, { method: 'PATCH', body: { status: e.target.value } }).then(done('Status updated')).catch(fail);
+});
+function csv(n) {
+  api.call('/api/admin/export/' + n + '.csv', { raw: 1 }).then(function (r) { return r.blob(); }).then(function (b) {
+    var a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'hemobridge-' + n + '.csv'; a.click();
+  }).catch(fail);
+}
+
+$('#dg').innerHTML += ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(function (g) { return '<option>' + g + '</option>'; }).join('');
+$('#go').onclick = login; $('#pw').onkeydown = function (e) { if (e.key == 'Enter') login(); };
+$('#rf').onclick = load; $('#lo').onclick = logout;
+$('#x1').onclick = function () { csv('requests'); }; $('#x2').onclick = function () { csv('donors'); };
+$('#tabs').onclick = function (e) { var t = e.target.closest('[data-tab]'); if (t) show(t.dataset.tab); };
+$('#hq').oninput = $('#hs').oninput = drawHospitals; $('#ps').oninput = drawPayments;
+$('#dq').oninput = $('#dg').oninput = drawDonors; $('#rq').oninput = $('#rs').oninput = drawRequests;
+$('#chg').onclick = function () {
+  api.call('/api/admin/password', { method: 'POST', body: { current: $('#cp').value, next: $('#np').value } })
+    .then(function () { $('#cp').value = $('#np').value = ''; HB.toast('Password changed'); }).catch(fail);
+};
+if (api.token()) start();
+</script></body></html>

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HemoBridge – Connecting Hearts, Saving Lives</title>
+<script>document.documentElement.dataset.theme=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div id="pg"></div>
+<header><div class="wrap nav">
+<a class="logo" href="#top"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.2 3 4.5 6.7 4.5c2 0 3.500 1 5.300 3 1.800-2 3.300-3 5.300-3 3.700 0 5.800 3.700 4.300 7.200C19.500 16.400 12 21 12 21z"/></svg>HemoBridge</a>
+<nav class="links" aria-label="Main"><a href="#banks">Blood banks</a><a href="#request">Request blood</a><a href="#donate">Donate</a><a href="#benefits">Benefits</a><a href="#about">About</a><a href="/hospital">For hospitals</a></nav>
+<div class="tools"><button class="ib" id="th" aria-label="Switch light or dark theme">◐</button><a class="btn sm" href="#donate">Become a donor</a></div>
+</div></header>
+
+<main id="top">
+<div class="hero">
+<svg class="ecg" viewBox="0 0 1200 120" preserveAspectRatio="none" aria-hidden="true"><path class="b" pathLength="100" d="M0 60H240L256 52L272 60H330L346 60L362 14L384 104L402 40L414 60H620L636 52L652 60H710L726 60L742 14L764 104L782 40L794 60H1200"/><path class="r" pathLength="100" d="M0 60H240L256 52L272 60H330L346 60L362 14L384 104L402 40L414 60H620L636 52L652 60H710L726 60L742 14L764 104L782 40L794 60H1200"/></svg>
+<div class="wrap hg"><div>
+<h1>Connecting hearts, saving lives</h1>
+<p>Find the nearest blood bank in seconds, send a blood request, or check if you can donate today.</p>
+<div class="row"><button class="btn w" id="hl">Find blood banks near me</button><a class="btn gh" href="#request">Request blood</a></div>
+<div class="sos"><i></i><span>Life-threatening emergency? Call <b>112</b> first.</span></div>
+</div>
+<div class="pv" aria-hidden="true"><span class="ring"></span><span class="ring"></span><span class="ring"></span><svg class="ht" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.2 3 4.5 6.7 4.5c2 0 3.5 1 5.3 3 1.8-2 3.3-3 5.3-3 3.7 0 5.8 3.7 4.3 7.2C19.5 16.4 12 21 12 21z"/></svg></div>
+</div></div>
+<div class="wrap qa">
+<a class="qa-i" href="#banks"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.800-7 11-7 11z"/><circle cx="12" cy="10" r="2.500"/></svg></div><div><b>Find blood banks</b><span>Closest banks with call and directions</span></div></a>
+<a class="qa-i" href="#request"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3s6 6.500 6 11a6 6 0 01-12 0c0-4.500 6-11 6-11z"/></svg></div><div><b>Request blood</b><span>Send a request, we match donors</span></div></a>
+<a class="qa-i" href="#donate"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.400-9-9a5 5 0 019-3 5 5 0 019 3c-2 4.600-9 9-9 9z"/></svg></div><div><b>Become a donor</b><span>Check if you can donate today</span></div></a>
+</div>
+
+<section id="banks"><div class="wrap">
+<div class="title"><h2>Blood banks near you</h2><p>Share your location or type a place. We show the closest blood banks with distance, a call button and directions.</p></div>
+<div class="bar">
+<button class="btn" id="loc" type="button">📍 Use my location</button>
+<form class="qf" id="qf"><input id="q" placeholder="Or type a city, area or hospital" aria-label="City, area or hospital"><button class="btn line" type="submit">Search</button></form>
+<select id="rad" aria-label="Search radius"><option value="5">Within 5 km</option><option value="10" selected>Within 10 km</option><option value="25">Within 25 km</option><option value="50">Within 50 km</option></select>
+</div>
+<p class="st" id="st" role="status" aria-live="polite">Allow location access or type a place to begin.</p>
+<div class="fx"><div class="list" id="list"><div class="empty">Blood banks will appear here.</div></div><div id="map" role="region" aria-label="Map of nearby blood banks"></div></div>
+<p class="note">Listings come from OpenStreetMap and can be incomplete or out of date. Always call to confirm stock and opening hours. Official stock: <a href="https://www.eraktkosh.in/" target="_blank" rel="noopener">eRaktKosh</a> · <a href="https://www.google.com/maps/search/blood+bank+near+me" target="_blank" rel="noopener">Search on Google Maps</a></p>
+</div></section>
+
+<section id="request" class="alt"><div class="wrap">
+<div class="title"><h2>Request blood</h2><p>Blood is issued only by licensed blood banks, against a doctor’s requirement. Fill this in, then find banks near the hospital.</p></div>
+<form class="fm" id="rform" novalidate>
+<div class="f">
+<div class="bg-wrap" style="grid-column:1/-1"><span class="lg2">Blood group needed</span><div class="bg" data-n="rb"></div></div>
+<label>Patient name<input name="pn" required autocomplete="off"></label>
+<label>Component<select name="comp"><option>Whole blood</option><option>Packed red cells</option><option>Platelets</option><option>Plasma</option></select></label>
+<label>Units<input name="units" type="number" inputmode="numeric" min="1" max="10" value="1" required></label>
+<label>Needed within<select name="urg"><option>Immediately</option><option>Within 6 hours</option><option>Within 24 hours</option><option>Planned (2 days or more)</option></select></label>
+<label>Hospital<input name="hosp" required></label>
+<label>City<input name="city" required autocomplete="address-level2"></label>
+<label>Doctor’s name<input name="doc" required></label>
+<label>Attendant mobile<input name="ph" type="tel" inputmode="tel" required></label>
+</div>
+<p style="margin:18px 0 0"><button class="btn" type="submit">Send request</button></p>
+<div id="rres" role="status" aria-live="polite"></div>
+</form>
+</div></section>
+
+<section id="donate"><div class="wrap">
+<div class="title"><h2>Become a donor</h2><p>Answer a few questions to see if you can donate today. The blood centre’s doctor makes the final decision.</p></div>
+<form class="fm" id="dform" novalidate>
+<fieldset><legend>About you</legend><div class="f">
+<label>Full name<input name="name" required autocomplete="name"></label>
+<label>Mobile number<input name="phone" type="tel" inputmode="tel" required autocomplete="tel"></label>
+<label>Email<input name="email" type="email" autocomplete="email"></label>
+<label>City<input name="city" required></label>
+<div class="bg-wrap" style="grid-column:1/-1"><span class="lg2">Blood group</span><div class="bg" data-n="bg"></div></div>
+<label>Sex<select name="sex" required><option value="">Select</option><option value="male">Male</option><option value="female">Female</option></select></label>
+<label>Date of birth<input name="dob" type="date" required></label>
+<label>Weight (kg)<input name="wt" type="number" inputmode="decimal" min="20" max="200" required></label>
+<label>Last donation date<input name="last" type="date"></label>
+<label>Haemoglobin, g/dL (optional)<input name="hb" type="number" inputmode="decimal" step="0.1" min="5" max="22"></label>
+</div><p class="hint" style="margin-top:10px">Leave “last donation” empty if this is your first time.</p></fieldset>
+<fieldset><legend>Recent events</legend><p class="hint">Tick anything that applies to you.</p><div class="chk" id="temp"></div></fieldset>
+<fieldset><legend>Health conditions</legend>
+<div class="chk"><label><input type="checkbox" id="perm"> I have, or have had, HIV, hepatitis B or C, cancer, heart disease, a bleeding disorder, insulin-dependent diabetes, or kidney or liver failure.</label>
+<label><input type="checkbox" id="priv"> There is something I would like to discuss privately with the doctor about infection risk.</label></div></fieldset>
+<fieldset><div class="chk"><label><input type="checkbox" id="consent" required> I agree to share my details (name, blood group, city and mobile number) with HemoBridge, verified hospitals and blood centres, so they can contact me when blood is needed. Donation is voluntary, and I will be tested for hepatitis B and C, HIV, malaria and syphilis. I can withdraw this consent at any time.</label></div></fieldset>
+<button class="btn" type="submit">Check my eligibility</button>
+<div id="dres" role="status" aria-live="polite"></div>
+</form>
+<form class="qf" id="oform" style="margin-top:18px" novalidate><input id="optph" type="tel" inputmode="tel" placeholder="Registered mobile number" aria-label="Registered mobile number"><button class="btn line" type="submit">Stop sharing my details with hospitals</button></form>
+<p class="hint" id="optres" role="status" aria-live="polite"></p>
+</div></section>
+
+<section id="benefits" class="alt"><div class="wrap">
+<div class="title"><h2>Donor benefits</h2><p>Your kindness saves lives. In return you get recognition and care.</p></div>
+<div class="grid" id="bens"></div>
+<p class="note">Blood donation in India is voluntary and unpaid. Benefits are recognition and care, never payment.</p>
+</div></section>
+
+<section id="about"><div class="wrap">
+<div class="grid">
+<div class="card r"><h3>The problem</h3><p>In critical moments, finding the right blood type is slow and stressful.</p><ul><li>No single place to find donors and blood banks</li><li>Slow communication between patients and donors</li><li>Hospitals lack simple request tools</li><li>Donors don’t hear about nearby emergencies</li></ul></div>
+<div class="card g"><h3>Our solution</h3><p>One connected platform for donors, patients and hospitals.</p><ul><li>Nearby blood banks with directions and a call button</li><li>Alerts to matching donors</li><li>A control panel for hospitals</li><li>Recognition for regular donors</li></ul></div>
+<div class="card"><h3>Mission and vision</h3><p>Cut the time it takes to find blood in an emergency, and build a nationwide network where blood unavailability becomes a thing of the past.</p></div>
+</div></div></section>
+</main>
+
+<nav class="mb" aria-label="Quick actions"><a href="#banks">Blood banks</a><a href="#request">Request</a><a href="#donate">Donate</a></nav>
+
+<footer><div class="wrap">
+<h2>Why HemoBridge?</h2><p>Because every second matters, and every donation can save a life.</p>
+<p style="margin-top:14px"><a href="/hospital" style="color:inherit;font-weight:600">Hospital login / register →</a></p>
+<p style="margin-top:20px;font-size:12.5px;color:#94868b">HemoBridge connects donors, patients and licensed blood centres. It does not sell or guarantee blood. Eligibility results are a pre-screen only, and the blood centre’s medical officer makes the final decision. Map data © OpenStreetMap contributors.</p>
+</div></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* ---- Backend hook: set API to your server URL (e.g. 'http://localhost:5000') ----
+   Expected endpoints:
+   GET  /api/bloodbanks/nearby?lat=&lng=&radius=  -> [{name,lat,lng,phone,address,hours}]
+   POST /api/donors   (JSON body: donor form fields)
+   POST /api/requests (JSON body: request form fields)
+   With API empty, the page works standalone using OpenStreetMap data. */
+var CFG={API:''};
+if(location.protocol.indexOf('http')==0)fetch('/api/health').then(function(r){if(r.ok)CFG.API=location.origin}).catch(function(){});
+var $=function(s){return document.querySelector(s)};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function post(p,b){if(!CFG.API)return Promise.resolve(null);return fetch(CFG.API+p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(function(r){if(!r.ok)throw 0;return r.json()}).catch(function(){return null})}
+function formData(f){var o={};new FormData(f).forEach(function(v,k){o[k]=v});return o}
+$('#th').onclick=function(){var d=document.documentElement;d.dataset.theme=d.dataset.theme=='dark'?'light':'dark'};
+
+/* icons + cards */
+var P={award:'<circle cx="12" cy="8" r="6"/><path d="M15.500 13.500 17 22l-5-3-5 3 1.500-8.500"/>',pulse:'<path d="M19 14c1.500-1.500 3-3.200 3-5.500A5.500 5.500 0 0 0 16.500 3c-1.800 0-3 .5-4.500 2-1.500-1.500-2.700-2-4.500-2A5.500 5.500 0 0 0 2 8.500c0 2.300 1.500 4 3 5.500l7 7z"/>',bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.300 21a1.900 1.900 0 0 0 3.400 0"/>',card:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',badge:'<circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/>',users:'<circle cx="9" cy="8" r="3.500"/><path d="M2 20c0-3.500 3-6 7-6s7 2.500 7 6"/><path d="M17 4.500a3.500 3.500 0 0 1 0 7M22 20c0-2.800-1.700-4.800-4-5.600"/>'};
+$('#bens').innerHTML=[['award','Recognition certificate','Receive a certificate after every successful donation.'],['pulse','Free health check','Blood pressure, haemoglobin and pulse are checked before each donation.'],['bell','Donation reminders','Get a reminder when you can donate again.'],['card','Emergency donor card','Carry a card with your blood group and emergency contact.'],['badge','Recognition badges','Unlock digital badges for regular donations.'],['users','Donor support','Help with questions before and after you donate.']].map(function(c){return '<div class="card"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">'+P[c[0]]+'</svg></div><h3>'+c[1]+'</h3><p>'+c[2]+'</p></div>'}).join('');
+
+/* blood-group chips */
+document.querySelectorAll('.bg').forEach(function(e){var n=e.dataset.n;e.innerHTML=['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(function(g,i){return '<input type="radio" name="'+n+'" id="'+n+i+'" value="'+g+'" required><label for="'+n+i+'">'+g+'</label>'}).join('')});
+
+/* ---- Nearby blood banks ---- */
+var map=L.map('map',{scrollWheelZoom:false}).setView([22.5,79],4),layer=L.layerGroup().addTo(map),items=[],marks=[];
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+function dot(c){return L.divIcon({className:'',html:'<div class="pin'+(c?' me':'')+'" style="width:20px;height:20px"></div>',iconSize:[20,20],iconAnchor:[10,10]})}
+function km(a,b,c,d){var r=Math.PI/180,x=Math.pow(Math.sin((c-a)*r/2),2)+Math.cos(a*r)*Math.cos(c*r)*Math.pow(Math.sin((d-b)*r/2),2);return 12742*Math.asin(Math.sqrt(x))}
+function st(t,bad){var e=$('#st');e.textContent=t;e.className='st'+(bad?' bad':'')}
+function fetchBanks(lat,lng,r){
+if(!CFG.API)return direct(lat,lng,r);
+return fetch(CFG.API+'/api/bloodbanks/nearby?lat='+lat+'&lng='+lng+'&radius='+r).then(function(x){if(!x.ok)throw 0;return x.json()}).then(function(a){if(!Array.isArray(a))throw 0;return a}).catch(function(){return direct(lat,lng,r)})}
+function ovp(u,q){return fetch(u,{method:'POST',body:'data='+encodeURIComponent(q)}).then(function(x){if(!x.ok)throw 0;return x.json()})}
+function direct(lat,lng,r){
+var a='(around:'+r*1000+','+lat+','+lng+')',q='[out:json][timeout:25];(nwr["amenity"="blood_bank"]'+a+';nwr["healthcare"="blood_bank"]'+a+';nwr["healthcare"="blood_donation"]'+a+';);out center tags;';
+return ovp('https://overpass-api.de/api/interpreter',q).catch(function(){return ovp('https://overpass.kumi.systems/api/interpreter',q)}).then(function(j){return j.elements.map(function(e){var t=e.tags||{},c=e.center||e;return{name:t.name||'Blood bank (name not listed)',lat:c.lat,lng:e.lon!=null?e.lon:c.lon,phone:t.phone||t['contact:phone']||'',address:[t['addr:housename'],t['addr:street'],t['addr:suburb'],t['addr:city']].filter(Boolean).join(', '),hours:t.opening_hours||''}})})}
+function gmap(lat,lng){var q='blood bank near '+lat.toFixed(4)+','+lng.toFixed(4);return '<iframe title="Blood banks on Google Maps" loading="lazy" style="width:100%;height:420px;border:0;border-radius:12px" src="https://maps.google.com/maps?q='+encodeURIComponent(q)+'&z=13&output=embed"></iframe><p class="note"><a class="btn sm line" target="_blank" rel="noopener" href="https://www.google.com/maps/search/'+encodeURIComponent(q)+'">Open in Google Maps</a></p>'}
+function search(lat,lng,r){
+$('#list').innerHTML='<div class="sk"></div><div class="sk"></div><div class="sk"></div>';st('Searching within '+r+' km…');
+fetchBanks(lat,lng,r).then(function(a){
+a.forEach(function(b){b.d=km(lat,lng,b.lat,b.lng)});a.sort(function(x,y){return x.d-y.d});
+if(!a.length&&r<50){var n=r<10?10:r<25?25:50;$('#rad').value=n;return search(lat,lng,n)}
+items=a;render(lat,lng,r)}).catch(function(){$('#list').innerHTML=gmap(lat,lng);st('Live list not available, showing Google Maps results below.',1)})}
+function render(lat,lng,r){
+layer.clearLayers();marks=[];var pts=[[lat,lng]];
+L.marker([lat,lng],{icon:dot(1),title:'You are here'}).addTo(layer);
+if(!items.length){$('#list').innerHTML='<div class="empty"><b>No listed blood banks within '+r+' km.</b><br>The map data may be incomplete here. Try a nearby city, or check <a href="https://www.eraktkosh.in/" target="_blank" rel="noopener">eRaktKosh</a> or <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/blood+bank/@'+lat+','+lng+',13z">Google Maps</a>.</div>'+gmap(lat,lng);st('No results in OpenStreetMap, showing Google Maps results.');map.setView([lat,lng],12);return}
+st(items.length+' blood bank'+(items.length>1?'s':'')+' found, nearest first.');
+$('#list').innerHTML=items.map(function(b,i){var dir='https://www.google.com/maps/dir/?api=1&destination='+b.lat+','+b.lng;
+return '<article class="bk" id="b'+i+'" tabindex="0"><div class="bt"><h3>'+esc(b.name)+'</h3><span class="dist">'+b.d.toFixed(1)+' km</span></div>'+(b.address?'<p>'+esc(b.address)+'</p>':'')+(b.hours?'<p>🕒 '+esc(b.hours)+'</p>':'')+'<div class="ac">'+(b.phone?'<a class="btn sm" href="tel:'+esc(b.phone.split(/[;,]/)[0].replace(/[^\d+]/g,''))+'">Call</a>':'<span class="note" style="margin:0">No phone listed</span>')+'<a class="btn sm line" target="_blank" rel="noopener" href="'+dir+'">Directions</a></div></article>'}).join('');
+items.forEach(function(b,i){var m=L.marker([b.lat,b.lng],{icon:dot(0),title:b.name}).addTo(layer).bindPopup('<b>'+esc(b.name)+'</b><br>'+b.d.toFixed(1)+' km away');m.on('click',function(){pick(i,0)});marks.push(m);pts.push([b.lat,b.lng])});
+var els=document.querySelectorAll('.bk');els.forEach(function(e,i){e.onclick=function(ev){if(!ev.target.closest('a'))pick(i,1)};e.onkeydown=function(ev){if(ev.key=='Enter'&&!ev.target.closest('a'))pick(i,1)}});
+map.fitBounds(pts.slice(0,9),{padding:[30,30],maxZoom:15})}
+function pick(i,fly){document.querySelectorAll('.bk').forEach(function(e){e.classList.remove('on')});var c=$('#b'+i);c.classList.add('on');if(!fly)c.scrollIntoView({block:'nearest',behavior:'smooth'});else{marks[i].openPopup();map.flyTo(marks[i].getLatLng(),15)}}
+function locate(){if(!navigator.geolocation){st('Your browser can’t share location. Type a city or area instead.',1);$('#q').focus();return}
+st('Finding your location…');$('#banks').scrollIntoView();
+navigator.geolocation.getCurrentPosition(function(p){search(p.coords.latitude,p.coords.longitude,+$('#rad').value)},function(){st('We couldn’t get your location. Allow access in your browser, or type a city or area.',1);$('#q').focus()},{enableHighAccuracy:true,timeout:12000,maximumAge:60000})}
+function geo(q){if(!q)return;st('Looking up “'+q+'”…');
+fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=in&q='+encodeURIComponent(q)).then(function(r){return r.json()}).then(function(j){if(!j.length){st('We couldn’t find that place. Try a nearby city or landmark.',1);return}search(+j[0].lat,+j[0].lon,+$('#rad').value)}).catch(function(){st('Place lookup failed. Check your connection.',1)})}
+$('#loc').onclick=locate;$('#hl').onclick=locate;
+$('#qf').onsubmit=function(e){e.preventDefault();geo($('#q').value.trim())};
+$('#rad').onchange=function(){if(me())search.apply(null,me().concat([+this.value]))};
+function me(){var m=layer.getLayers()[0];return m?[m.getLatLng().lat,m.getLatLng().lng]:null}
+
+/* ---- Donor eligibility ---- */
+var T=[['tattoo','Tattoo, piercing or acupuncture','12 months',365],['major','Major surgery, or a blood transfusion received','12 months',365],['minor','Minor surgery','3 months',90],['malaria','Malaria','3 months after recovery',90],['typhoid','Typhoid','12 months after recovery',365],['dengue','Dengue, chikungunya or Zika','6 months after recovery',180],['vaxl','Live vaccine (for example MMR, oral polio)','28 days',28],['vax','Any other vaccine','14 days',14],['abx','Antibiotics','2 weeks after the last dose',14],['dental','Tooth extraction or root canal','14 days',14],['fever','Fever, cold, cough or sore throat right now','Until you feel well',0],['fast','No meal in the last 4 hours, or fasting today','Eat first, then donate',0],['fem1','Delivered a baby or breastfeeding, in the last 12 months','12 months after delivery',365,'female'],['fem2','Abortion','6 months',180,'female'],['fem3','Pregnant, or menstruating today','Until it ends',0,'female']];
+var tb=$('#temp');
+tb.innerHTML=T.map(function(t){return '<label data-sex="'+(t[4]||'')+'"><input type="checkbox" value="'+t[0]+'"> <span>'+t[1]+'</span></label>'}).join('');
+function fs(){var s=$('[name=sex]').value;tb.querySelectorAll('[data-sex]').forEach(function(l){var f=l.dataset.sex;l.style.display=(f&&f!==s)?'none':'';if(f&&f!==s)l.querySelector('input').checked=false})}
+$('[name=sex]').addEventListener('change',fs);fs();
+function fd(d){return d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}
+function show(el,cls,h,items,p,extra){el.innerHTML='<div class="res '+cls+'"><h3>'+h+'</h3>'+(items&&items.length?'<ul>'+items.map(function(i){return '<li>'+i+'</li>'}).join('')+'</ul>':'')+(p?'<p>'+p+'</p>':'')+(extra?'<div class="ac">'+extra+'</div>':'')+'</div>';el.scrollIntoView({block:'nearest',behavior:'smooth'})}
+$('#dform').addEventListener('submit',function(e){e.preventDefault();
+var f=e.target,v=function(n){return f.elements[n].value},out=$('#dres');
+if(!f.checkValidity()||!v('bg')||!$('#consent').checked){f.reportValidity();show(out,'no','Please complete the form',['Fill in every required field, pick your blood group and accept the consent box.']);return}
+var dd=formData(f);dd.consent=$('#consent').checked;post('/api/donors',dd);
+var today=new Date();today.setHours(0,0,0,0);var dob=new Date(v('dob')),age=today.getFullYear()-dob.getFullYear()-((today.getMonth()<dob.getMonth()||(today.getMonth()==dob.getMonth()&&today.getDate()<dob.getDate()))?1:0);
+var last=v('last')?new Date(v('last')):null,wt=+v('wt'),hb=v('hb')?+v('hb'):null,sex=v('sex');
+var perm=[];if($('#perm').checked)perm.push('A long-term condition on the national permanent-deferral list');
+if(age>65)perm.push('Maximum donor age is 65');else if(!last&&age>60)perm.push('First-time donors must be 60 or younger');
+if(perm.length){show(out,'no','Not eligible to donate blood',perm,'Thank you for trying. You can still help by sharing HemoBridge and encouraging others to donate.');return}
+var why=[],until=null,vol=null;
+function w(txt,d){why.push(txt+(d?' (until '+fd(d)+')':''));if(d&&(!until||d>until))until=d}
+if(age<18){w('You must be at least 18',new Date(dob.getFullYear()+18,dob.getMonth(),Math.min(dob.getDate(),28)))}
+if(last){var g=new Date(last);g.setDate(g.getDate()+(sex=='male'?90:120));if(g>today)w('Gap since your last donation is too short ('+(sex=='male'?'3':'4')+' months needed)',g)}
+if(wt<45)why.push('Weight must be at least 45 kg');else vol=wt>55?450:350;
+if(hb!==null&&hb<12.5)why.push('Haemoglobin must be at least 12.5 g/dL');
+tb.querySelectorAll('input:checked').forEach(function(c){var t=T.filter(function(x){return x[0]==c.value})[0];why.push(t[1]+' – wait: '+t[2])});
+if(why.length){show(out,'wait','Not today',why,'This is temporary. '+(until?'You can try again after '+fd(until)+', and the time for any event you ticked starts from that event’s date.':'Fix the point above and check again.'));return}
+var pv=$('#priv').checked,find='<button class="btn sm" type="button" id="dfind">Find a blood centre near me</button>';
+show(out,pv?'wait':'ok',pv?'The doctor will talk to you first':'You look eligible to donate',[],(pv?'Please visit a blood centre. The doctor will speak with you privately and decide. ':'Please visit a licensed blood centre or camp. ')+'The doctor will check your haemoglobin, blood pressure and pulse, and make the final decision.'+(vol?' Expected collection: '+vol+' ml.':''),find);
+$('#dfind').onclick=locate});
+
+/* ---- Withdraw consent ---- */
+$('#oform').addEventListener('submit',function(e){e.preventDefault();var o=$('#optres');
+post('/api/donors/optout',{phone:$('#optph').value}).then(function(r){o.textContent=r&&r.ok?'Done. Hospitals can no longer see your details.':'Please enter the mobile number you registered with, or try again later.'})});
+
+/* ---- Blood request ---- */
+var G={'O-':'O- O+ A- A+ B- B+ AB- AB+','O+':'O+ A+ B+ AB+','A-':'A- A+ AB- AB+','A+':'A+ AB+','B-':'B- B+ AB- AB+','B+':'B+ AB+','AB-':'AB- AB+','AB+':'AB+'};
+$('#rform').addEventListener('submit',function(e){e.preventDefault();var f=e.target,x=f.elements,out=$('#rres');
+if(!f.checkValidity()){f.reportValidity();show(out,'no','Please complete the form',['Pick a blood group and fill in every required field.']);return}
+post('/api/requests',formData(f)).then(function(r){if(r&&r.matches!=null){var u=out.querySelector('.res');if(u)u.insertAdjacentHTML('beforeend','<p>'+r.matches+' registered donor(s) in this city match and will be alerted. Request ID: '+esc(r.id)+'</p>')}});
+var pg=x.rb.value,ok=Object.keys(G).filter(function(k){return G[k].split(' ').indexOf(pg)>-1}),pl=/Platelets|Plasma/.test(x.comp.value);
+var msg='URGENT blood needed: '+x.units.value+' unit(s) '+pg+' ('+x.comp.value+'), '+x.urg.value.toLowerCase()+'. Patient: '+x.pn.value+'. Hospital: '+x.hosp.value+' (Dr. '+x.doc.value+'). Contact: '+x.ph.value+'. via HemoBridge';
+show(out,'ok','Request ready for '+esc(x.pn.value),['Needed: '+esc(x.units.value)+' unit(s) of '+esc(x.comp.value)+', '+pg+', '+esc(x.urg.value.toLowerCase()),'Hospital: '+esc(x.hosp.value)+' (Dr. '+esc(x.doc.value)+')',pl?'Platelet and plasma matching follows different rules, so the blood bank will confirm the compatible groups.':'Red-cell compatible donor groups: '+ok.join(', ')],'Next step: contact a licensed blood bank near the hospital, and share this request with family and friends who may be able to donate.','<button class="btn sm" type="button" id="rfind">Find banks near the hospital</button><a class="btn sm line" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(msg)+'">Share on WhatsApp</a>');
+$('#rfind').onclick=function(){$('#q').value=x.hosp.value;$('#banks').scrollIntoView();geo(x.hosp.value)}});
+</script>
+<script src="/js/fx.js" defer></script>
+</body>
+</html>
