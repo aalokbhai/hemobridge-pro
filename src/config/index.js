@@ -34,6 +34,10 @@ module.exports = {
     user: env.DB_USER || 'root',
     password: env.DB_PASSWORD || '',
     database: env.DB_NAME || 'hemobridge',
-    ssl: bool(env.DB_SSL) ? { rejectUnauthorized: bool(env.DB_SSL_REJECT_UNAUTHORIZED, true) } : undefined,
-  },
+    ssl: bool(env.DB_SSL)
+  ? {
+      ca: env.DB_SSL_CA,
+      rejectUnauthorized: bool(env.DB_SSL_REJECT_UNAUTHORIZED, true),
+    }
+  : undefined,
 };
